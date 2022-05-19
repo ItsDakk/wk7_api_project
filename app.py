@@ -1,5 +1,4 @@
 from flask import Flask, request, g, make_response, abort
-from helpers import require_admin
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_moment import Moment
@@ -154,7 +153,7 @@ def require_admin(f, *args, **kwargs):
 ##---------- /login ----------##
 # GET => Returns User info (not password) along with the User Token
 @app.get('/login')
-@basic_auth
+@basic_auth.login_required()
 def get_login():
     user = g.current_user
     token = user.get_token()
@@ -173,7 +172,7 @@ def get_login():
     # "is_admin" = "Boolean"
     
 @app.post('/user/<int:id>')
-@basic_auth
+@token_auth.login_required()
 @require_admin
 def register_user(id):
     new_user_dict = request.get_json()
@@ -185,7 +184,7 @@ def register_user(id):
     return make_response(f"User {new_user.first_name} {new_user.last_name} has been created with id: {new_user.id}", 200)
 
 @app.put('/user/<int:id>')
-@basic_auth
+@token_auth.login_required()
 @require_admin
 def put_user(id):
     user_dict = request.get_json()
@@ -197,7 +196,7 @@ def put_user(id):
     return make_response(f"User {user.id} has been udpated", 200)
 
 @app.delete('/user/<int:id>')
-@basic_auth
+@token_auth.login_required()
 @require_admin
 def delete_user(id):
     user_to_delete = User.query.get(id)
@@ -215,16 +214,16 @@ def delete_user(id):
 # DELETE => Delete a Book by id
 
 # GET => Return a list of all Books
-@app.book('/book')
-@basic_auth
+@app.get('/book')
+@token_auth.login_required()
 def get_book():
     books = Book.query.all()
     book_dicts = [book.to_dict() for book in books]
     return make_response({"books": book_dicts}, 200)
 
 # GET => Return book info for book by id
-@app.book('/book/<int:id>')
-@basic_auth
+@app.get('/book/<int:id>')
+@token_auth.login_required()
 def get_book_by_id(id):
     book = Book.query.get(id)
     if not book:
@@ -240,7 +239,7 @@ def get_book_by_id(id):
     # "image" = "String"
 
 @app.post('/book')
-@basic_auth
+@token_auth.login_required()
 @require_admin
 def post_book():
     book_dict = request.get_json()
@@ -254,7 +253,7 @@ def post_book():
 
 # PUT => Edits a Book by id
 @app.put('/book/<int:id>')
-@basic_auth
+@token_auth.login_required()
 @require_admin
 def put_book(id):
     book_dict = request.get_json()
@@ -267,7 +266,7 @@ def put_book(id):
 
 # DELETE => Delete a Book by id
 @app.delete('/item/<int:id>')
-@basic_auth
+@token_auth.login_required()
 @require_admin
 def delete_book(id):
     book_to_delete = Book.query.get(id)
@@ -275,3 +274,6 @@ def delete_book(id):
         abort(404)
     book_to_delete.delete()
     return make_response(f"Book with id: {id} has been removed",200)
+
+if __name__ == "__main__":
+    app.run(debug=True)
